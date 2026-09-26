@@ -12,7 +12,7 @@ class JavaNotInstalledException(InstallerException):
     ...
 
 
-def exception_catcher[T](func: Callable[..., T]):
+def exception_catcher[T](func: Callable[..., T]) -> Callable[..., T]:
     @wraps(func)
     def wrapper(*args: tuple[Any], **kwargs: dict[str, Any]):
         try:
@@ -21,4 +21,4 @@ def exception_catcher[T](func: Callable[..., T]):
             from libs.gui_manager import GUIManager
             GUIManager().main()  # type: ignore
             messagebox.showerror("Error", traceback.format_exc())
-    return wrapper
+    return wrapper  # type: ignore
