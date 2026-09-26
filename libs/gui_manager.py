@@ -184,7 +184,6 @@ class GUIManager(metaclass=SingletonMeta):
         thread = Thread(target=self._handle_install, daemon=True)
         thread.start()
 
-    @exception_catcher
     def run(self) -> None:
         self.main()
         self.root.mainloop()
