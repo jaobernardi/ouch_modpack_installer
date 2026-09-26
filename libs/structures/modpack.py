@@ -117,19 +117,24 @@ class Modpack(BaseModel):
 
     @computed_field
     def dot_minecraft(self) -> str:
-        return f"{os.environ['appdata']}\\.minecraft"
+        if os.name == "nt":
+            return f"{os.environ['appdata']}/.minecraft"
+        else:
+            return f"{os.environ['HOME']}/.minecraft"
 
     @computed_field
     def tmp_path(self) -> str:
-        return f"{os.environ['TMP']}\\modpack_installer"
+        if os.name == "nt":
+            return f"{os.environ['TMP']}/modpack_installer"
+        return "/tmp/modpack_installer"
 
     def download_resource(self, file: ModrinthIndex.ModrinthIndexFile):
         self.download_file(
             file.download,
-            f"{self.dot_minecraft}\\{file.path}",
+            f"{self.dot_minecraft}/{file.path}",
             file.hashes.sha512,
         )
-        return f"{self.dot_minecraft}\\{file.path}"
+        return f"{self.dot_minecraft}/{file.path}"
 
     def install_client(self, memory_gb: Optional[int] = None):
         memory_gb = memory_gb or 8
@@ -141,12 +146,12 @@ class Modpack(BaseModel):
             for i in self.modrinth_index.files
         ]
 
-        for file in os.listdir(f'{self.dot_minecraft}\\mods'):
+        for file in os.listdir(f'{self.dot_minecraft}/mods'):
             yield AppState(type=AppStateType.DIFF_CHECK, meta=file)
             if file not in filenames:
                 print(f"Removing {file}")
                 try:
-                    os.remove(f'{self.dot_minecraft}\\mods\\{file}')
+                    os.remove(f'{self.dot_minecraft}/mods/{file}')
                 except OSError:
                     print(f"Failed removing {file}")
 
@@ -168,11 +173,11 @@ class Modpack(BaseModel):
                 return
 
             for file in os.listdir(origin):
-                recursive_move(origin + f"\\{file}", destination + f"\\{file}")
+                recursive_move(origin + f"/{file}", destination + f"/{file}")
 
-        recursive_move(f"{self.dot_minecraft}\\overrides\\", self.dot_minecraft)  # pyright: ignore[reportArgumentType] # noqa: E501
+        recursive_move(f"{self.dot_minecraft}/overrides/", self.dot_minecraft)  # pyright: ignore[reportArgumentType] # noqa: E501
 
-        shutil.rmtree(f"{self.dot_minecraft}\\overrides")
+        shutil.rmtree(f"{self.dot_minecraft}/overrides")
 
         # Download CDN mods
         queue: Queue[AppState] = Queue()
@@ -210,24 +215,21 @@ class Modpack(BaseModel):
         self.download_file(
             f"https://aiquedificil.com.br/modpack/neoforge-{neoforge_version}-installer-fat.jar",  # noqa: 501
             # f'https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoforge_version}/neoforge-{neoforge_version}-installer.jar',
-            f"{self.tmp_path}\\neoforge.jar",
+            f"{self.tmp_path}/neoforge.jar",
         )
 
         yield AppState(
             type=AppStateType.LOADER_INSTALL
         )  # pyright: ignore[reportCallIssue]
 
-        with open(f"{self.dot_minecraft}\\launcher_profiles.json", "rb") as file:  # noqa: 501
+        with open(f"{self.dot_minecraft}/launcher_profiles.json", "rb") as file:  # noqa: 501
             launcher_prof = json.load(file)
 
         if launcher_prof["profiles"]\
                 .get("OuchQueDificil", {})\
                 .get("lastVersionId") != f"neoforge-{neoforge_version}":
-
-            CREATE_NO_WINDOW = 0x08000000
             subprocess.call(
-                f"java -jar {self.tmp_path}\\neoforge.jar --install-client",
-                creationflags=CREATE_NO_WINDOW,
+                ["java", "-jar", f"{self.tmp_path}/neoforge.jar", "--install-client"]
             )
 
         # Change profile
@@ -244,7 +246,7 @@ class Modpack(BaseModel):
             "type": "custom",
         }
 
-        with open(f"{self.dot_minecraft}\\launcher_profiles.json", "w") as file:  # noqa: 501
+        with open(f"{self.dot_minecraft}/launcher_profiles.json", "w") as file:  # noqa: 501
             json.dump(launcher_prof, file, indent=2)
 
         yield AppState(
