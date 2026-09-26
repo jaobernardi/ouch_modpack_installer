@@ -1,24 +1,32 @@
+from io import BytesIO
 import logging
 import os
 import sys
+from threading import Thread
 from tkinter import Menu, StringVar, Tk, ttk
+import zipfile
 
 from PIL import Image, ImageTk
 import psutil
+import requests
 
+from libs.exceptions import exception_catcher
+from libs.structures.modpack import Modpack
 from libs.structures.settings import GarbageCollectorEnum, InstallSettings
+from libs.structures.singleton import SingletonMeta
 
 global MAX_MEMORY
 MAX_MEMORY = round(psutil.virtual_memory().total/1024/1024/1024)
 
 
-class GUIManager:
-    def __init__(self) -> None:
+class GUIManager(metaclass=SingletonMeta):
+    def __init__(self):
         self.root = Tk()
         self.logger = logging.getLogger(self.__class__.__qualname__)
         self.style: dict[str, str] = {
             "BG_COLOR": "#1e1f2e"
         }
+        self.hidden_menu = False
         self.installation_settings = InstallSettings.get_ideal_settings()
         self.logo: ImageTk.PhotoImage | None = None
         self.setup()
@@ -34,6 +42,7 @@ class GUIManager:
             base_path = os.path.abspath(".")
         return os.path.join(base_path, relative_path)  # type: ignore
 
+    @exception_catcher
     def get_menu(self) -> Menu:
         menubar = Menu(
             self.root,
@@ -83,6 +92,7 @@ class GUIManager:
         menubar.add_cascade(label="Garbage Collector", menu=utils_gc)
         return menubar
 
+    @exception_catcher
     def reset(self):
         # Destroy all children.
         for element in [i for i in self.root.children.values()]:
@@ -97,8 +107,10 @@ class GUIManager:
         ).pack()
 
         menubar = self.get_menu()
+        assert menubar
         self.root.config(menu=menubar)
 
+    @exception_catcher
     def setup(self):
         self.logger.info("Setting up tkinter")
         self.root.resizable(False, False)
@@ -118,5 +130,61 @@ class GUIManager:
         self.logo = ImageTk.PhotoImage(image)
         self.reset()
 
+    @exception_catcher
+    def _handle_install(self):
+        lbl = ttk.Label(
+            self.root,
+            text="Baixando índice de mods",
+            background="#1e1f2e",
+            foreground="white",
+            justify="center",
+            wraplength=256,
+        )
+        lbl.pack()
+        req = requests.get("https://aiquedificil.com.br/modpack/pack.mrpack")
+
+        try:
+            file = zipfile.PyZipFile(BytesIO(req.content))
+            modpack = Modpack.from_zip(file)
+            for i in modpack.install_client(self.installation_settings):
+                lbl["text"] = i.msg
+        except Exception as e:
+            self.main()
+            lbl = ttk.Label(
+                self.root,
+                text="Gag, falhei ao instalar modpack :'(",
+                background="#1e1f2e",
+                foreground="#991F1F",
+                justify="center",
+                wraplength=256,
+            )
+            lbl.pack()
+            raise e
+
+    @exception_catcher
+    def main(self):
+        self.reset()
+        self.hidden_menu = False
+        ttk.Button(
+            self.root,
+            style="BW.TLabel",
+            text="Instalar Modpack",
+            command=self.install_modpack
+        ).pack()
+
+    @exception_catcher
+    def install_modpack(self):
+        self.hidden_menu = True
+        self.reset()
+        ttk.Label(
+            self.root,
+            text="Instalando modpack",
+            style="BW.TLabel"
+        ).pack()
+        thread = Thread(target=self._handle_install, daemon=True)
+        thread.start()
+
+    @exception_catcher
     def run(self) -> None:
+        self.main()
         self.root.mainloop()

@@ -5,11 +5,13 @@ import shutil
 import subprocess
 from multiprocessing.pool import ThreadPool
 from queue import Empty, Queue
-from typing import Callable, Optional
+from typing import Callable
 from zipfile import ZipFile
 
 import requests
 from pydantic import BaseModel, Field, computed_field
+
+from libs.structures.settings import InstallSettings
 
 from .state import AppState, AppStateType
 
@@ -136,11 +138,7 @@ class Modpack(BaseModel):
         )
         return f"{self.dot_minecraft}/{file.path}"
 
-    def install_client(self, memory_gb: Optional[int] = None):
-        memory_gb = memory_gb or 8
-
-        print("Defined memory to", memory_gb)
-
+    def install_client(self, installation_settings: InstallSettings):
         filenames = [
             i.path.replace('mods/', '')
             for i in self.modrinth_index.files
@@ -237,8 +235,7 @@ class Modpack(BaseModel):
                 ]
             )
 
-        # Change profile
-
+        # Prioritize Ouch's profile
         for profile in launcher_prof["profiles"].values():
             profile["lastUsed"] = "1970-01-02T00:00:00.000Z"
 
@@ -247,7 +244,8 @@ class Modpack(BaseModel):
             "lastUsed": "2025-11-23T01:27:22.178Z",
             "lastVersionId": f"neoforge-{neoforge_version}",
             "name": "Ouch Que Dificil",
-            "javaArgs": f"-Xmx{memory_gb * 1024}M -Xms{memory_gb * 1024}M -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M",  # noqa: 501
+            # TODO: Implement dynamic GC
+            "javaArgs": f"-Xmx{installation_settings.allocated_memory}M -Xms{installation_settings.allocated_memory}M -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M",  # noqa: 501
             "type": "custom",
         }
 
