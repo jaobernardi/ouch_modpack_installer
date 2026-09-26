@@ -1,5 +1,7 @@
 from libs.gui_manager import GUIManager
+import logging
 
+logging.basicConfig(level=logging.INFO)
 
 manager = GUIManager()
 
