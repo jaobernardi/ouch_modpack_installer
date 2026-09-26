@@ -1,0 +1,6 @@
+class InstallerException(BaseException):
+    ...
+
+
+class JavaNotInstalledException(InstallerException):
+    ...
