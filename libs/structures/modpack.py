@@ -229,7 +229,12 @@ class Modpack(BaseModel):
                 .get("OuchQueDificil", {})\
                 .get("lastVersionId") != f"neoforge-{neoforge_version}":
             subprocess.call(
-                ["java", "-jar", f"{self.tmp_path}/neoforge.jar", "--install-client"]
+                [
+                    "java",
+                    "-jar",
+                    f"{self.tmp_path}/neoforge.jar",
+                    "--install-client"
+                ]
             )
 
         # Change profile
