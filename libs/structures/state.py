@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 from pydantic import BaseModel, Field, computed_field
 from enum import StrEnum
 
@@ -13,19 +13,21 @@ class AppStateType(StrEnum):
     DONE = "done"
     DIFF_CHECK = "diff_check"
 
+
 STATE_MSG_MAP: dict[AppStateType, str] = {
     AppStateType.PATH_CLEANUP: "Limpando .minecraft",
-    AppStateType.DIFF_CHECK: "Verificando integridade e diff...\n({state.meta})",
+    AppStateType.DIFF_CHECK: "Verificando integridade e diff...\n({state.meta})",  # noqa: E501
     AppStateType.OVERRIDES_EXTRACTING: "Extraíndo overrides",
-    AppStateType.MODPACK_DOWNLOADING: "Baixando modpack\n({state.meta.filename})",
+    AppStateType.MODPACK_DOWNLOADING: "Baixando modpack\n({state.meta.filename})",  # noqa: E501
     AppStateType.LOADER_DOWNLOAD: "Baixando loader\n({state.meta})",
     AppStateType.LOADER_INSTALL: "Instalando loader",
     AppStateType.DONE: "Prontinho!",
 }
 
-class AppState(BaseModel): 
+
+class AppState(BaseModel):
     type: AppStateType
-    meta: Any | dict[str, Any] | None = Field(None)
+    meta: Optional[Any | dict[str, Any]] = Field(None)
 
     @computed_field
     @property
