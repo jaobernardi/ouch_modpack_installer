@@ -1,5 +1,6 @@
 import hashlib
 import json
+from logging import getLogger
 import os
 import shutil
 import subprocess
@@ -14,6 +15,8 @@ from pydantic import BaseModel, Field, computed_field
 from libs.structures.settings import InstallSettings
 
 from .state import AppState, AppStateType
+
+logger = getLogger("Modpack")
 
 
 class ModrinthIndex(BaseModel):
@@ -87,6 +90,7 @@ class Modpack(BaseModel):
 
         calculated_hash = hasher.hexdigest()
         if calculated_hash != expected_checksum:
+            logger.warning(f"Download verification failed for {path}.")
             return False
         return True
 
@@ -114,7 +118,6 @@ class Modpack(BaseModel):
                     local_file.write(chunk)
 
         if has_checksum and not Modpack.checksum_file(path, checksum512):
-            print(f"Download verification failed for {path}. Retrying...")
             return Modpack.download_file(url, path, checksum512)
 
     @computed_field
@@ -147,12 +150,11 @@ class Modpack(BaseModel):
         for file in os.listdir(f'{self.dot_minecraft}/mods'):
             yield AppState(type=AppStateType.DIFF_CHECK, meta=file)
             if file not in filenames:
-                print(f"Removing {file}")
+                logger.info(f"Removing {file}")
                 try:
                     os.remove(f'{self.dot_minecraft}/mods/{file}')
                 except OSError:
-                    print(f"Failed removing {file}")
-
+                    logger.warning(f"Failed removing {file}")
         # Extract overrides
 
         yield AppState(type=AppStateType.OVERRIDES_EXTRACTING)  # pyright: ignore[reportCallIssue] # noqa: E501
@@ -210,22 +212,23 @@ class Modpack(BaseModel):
         if not os.path.exists(f"{self.tmp_path}"):
             os.mkdir(f"{self.tmp_path}")
 
-        self.download_file(
-            f"https://aiquedificil.com.br/modpack/neoforge-{neoforge_version}-installer-fat.jar",  # noqa: 501
-            # f'https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoforge_version}/neoforge-{neoforge_version}-installer.jar',
-            f"{self.tmp_path}/neoforge.jar",
-        )
-
-        yield AppState(
-            type=AppStateType.LOADER_INSTALL
-        )  # pyright: ignore[reportCallIssue]
-
         with open(f"{self.dot_minecraft}/launcher_profiles.json", "rb") as file:  # noqa: 501
             launcher_prof = json.load(file)
 
         if launcher_prof["profiles"]\
                 .get("OuchQueDificil", {})\
                 .get("lastVersionId") != f"neoforge-{neoforge_version}":
+
+            self.download_file(
+                f"https://aiquedificil.com.br/modpack/neoforge-{neoforge_version}-installer-fat.jar",  # noqa: 501
+                # f'https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoforge_version}/neoforge-{neoforge_version}-installer.jar',
+                f"{self.tmp_path}/neoforge.jar",
+            )
+
+            yield AppState(
+                type=AppStateType.LOADER_INSTALL
+            )  # pyright: ignore[reportCallIssue]
+
             subprocess.call(
                 [
                     "java",
