@@ -9,8 +9,7 @@ logging.basicConfig(level=logging.DEBUG, handlers=[logging.FileHandler("installe
 manager = GUIManager()
 
 if __name__ == "__main__":
-    if os.name != "nt":
-        multiprocessing.set_start_method('forkserver', force=True)
+    multiprocessing.set_start_method('forkserver', force=True)
     multiprocessing.freeze_support()
 
     manager.run()

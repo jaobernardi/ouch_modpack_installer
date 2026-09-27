@@ -56,9 +56,7 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile main.py
-        # Alternative if you already have a spec file:
-        # pyinstaller main.spec
+        pyinstaller --onefile --no-console --icon logo.ico --add-data=logo.ico:. main.py
 
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4
