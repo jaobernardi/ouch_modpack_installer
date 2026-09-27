@@ -147,6 +147,9 @@ class Modpack(BaseModel):
             for i in self.modrinth_index.files
         ]
 
+        if not os.path.exists(f"{self.dot_minecraft}/mods"):
+            os.mkdir(f"{self.dot_minecraft}/mods")
+
         for file in os.listdir(f'{self.dot_minecraft}/mods'):
             yield AppState(type=AppStateType.DIFF_CHECK, meta=file)
             if file not in filenames:
