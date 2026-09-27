@@ -117,7 +117,10 @@ class GUIManager(metaclass=SingletonMeta):
         self.root.title("Ouch que Dificil: Instalador de Modpack")
 
         try:
-            self.root.iconbitmap(self.resource_path("logo.ico"))  # type: ignore # noqa
+            if os.name == "nt":
+                self.root.iconbitmap(self.resource_path("logo.ico"))  # type: ignore # noqa
+            else:
+                self.root.iconphoto(True, self.resource_path("logo.ico"))
         except:  # noqa
             self.logger.warning("Failed to set iconbitmap")
             pass
