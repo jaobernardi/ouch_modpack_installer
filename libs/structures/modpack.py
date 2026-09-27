@@ -223,7 +223,7 @@ class Modpack(BaseModel):
                 .get("lastVersionId") != f"neoforge-{neoforge_version}":
 
             self.download_file(
-                f"https://aiquedificil.com.br/modpack/neoforge-{neoforge_version}-installer-fat.jar",  # noqa: 501
+                f"https://cdn.aiquedificil.com.br/assets/neoforge-{neoforge_version}-installer-fat.jar",  # noqa: 501
                 # f'https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoforge_version}/neoforge-{neoforge_version}-installer.jar',
                 f"{self.tmp_path}/neoforge.jar",
             )
