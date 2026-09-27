@@ -22,7 +22,7 @@ logger = getLogger("Modpack")
 class ModrinthIndex(BaseModel):
     game: str
     name: str
-    summary: str
+    summary: str = Field(default_factory=str)
     java_args: str = Field(default_factory=lambda: "")
 
     class ModrinthIndexFile(BaseModel):
