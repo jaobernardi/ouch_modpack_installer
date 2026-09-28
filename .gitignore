@@ -8,3 +8,5 @@ bin/*
 *.env
 dist/*
 build/*
+index.py
+modrinth.index.json
