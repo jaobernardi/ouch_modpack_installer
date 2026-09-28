@@ -144,10 +144,12 @@ class GUIManager(metaclass=SingletonMeta):
             wraplength=256,
         )
         lbl.pack()
-        r = requests.get("https://cdn.aiquedificil.com.br/assets/latest.mrpack")
+        req = requests.get(
+            "https://cdn.aiquedificil.com.br/assets/latest.mrpack"
+        )
 
         try:
-            file = zipfile.PyZipFile(BytesIO(r.content))
+            file = zipfile.PyZipFile(BytesIO(req.content))
             modpack = Modpack.from_zip(file)
             for i in modpack.install_client(self.installation_settings):
                 lbl["text"] = i.msg
